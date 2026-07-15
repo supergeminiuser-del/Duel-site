@@ -5,46 +5,52 @@ import * as cheerio from 'cheerio';
 
 export async function GET() {
   try {
-    // 1. Идем на вики Steal a Brainrot
     const { data } = await axios.get('https://steal-a-brainrot.fandom.com/wiki/Brainrots');
     const $ = cheerio.load(data);
     
-    let updatedCount = 0;
+    const itemsToUpsert: any[] = [];
 
-    // 2. Ищем таблицу с предметами (класс может меняться, берем основную таблицу)
-    $('.article-table tbody tr').each(async (i, el) => {
+    // Сначала синхронно собираем данные со страницы
+    $('.article-table tbody tr').each((i, el) => {
       const name = $(el).find('td:nth-child(2)').text().trim();
       const incomeText = $(el).find('td:nth-child(3)').text().trim();
       const rarity = $(el).find('td:nth-child(4)').text().trim();
       
-      // Парсим цифры из текста (например "125,000" -> 125000)
       const income = parseFloat(incomeText.replace(/[^0-9.]/g, ''));
 
       if (name && !isNaN(income)) {
-        // 3. Обновляем или создаем запись в БД
-        await prisma.brainrot.upsert({
-          where: { name },
-          update: { 
-            baseIncome: income, 
-            rarity: rarity || 'Unknown',
-            baseValue: income * 3600
-          },
-          create: {
-            name,
-            baseIncome: income,
-            baseValue: income * 3600,
-            rarity: rarity || 'Unknown',
-            category: 'Parsed',
-            imageUrl: `/images/${name.toLowerCase().replace(/ /g, '-')}.jpg`
-          }
+        itemsToUpsert.push({
+          name,
+          baseIncome: income,
+          rarity: rarity || 'Unknown',
+          baseValue: income * 3600
         });
-        updatedCount++;
       }
     });
 
+    // Теперь асинхронно сохраняем их в базу данных
+    for (const item of itemsToUpsert) {
+      await prisma.brainrot.upsert({
+        where: { name: item.name },
+        update: { 
+          baseIncome: item.baseIncome, 
+          rarity: item.rarity,
+          baseValue: item.baseValue
+        },
+        create: {
+          name: item.name,
+          baseIncome: item.baseIncome,
+          baseValue: item.baseValue,
+          rarity: item.rarity,
+          category: 'Parsed',
+          imageUrl: `/images/${item.name.toLowerCase().replace(/ /g, '-')}.jpg`
+        }
+      });
+    }
+
     return NextResponse.json({ 
       success: true, 
-      message: `Wiki sync complete. Updated ${updatedCount} brainrots.`
+      message: `Wiki sync complete. Updated ${itemsToUpsert.length} brainrots.`
     });
 
   } catch (error: any) {
