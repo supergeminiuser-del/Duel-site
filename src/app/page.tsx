@@ -1,46 +1,76 @@
 "use client";
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Swords, Trophy, Zap } from 'lucide-react';
+import { Swords, Trophy, Crosshair, ArrowRight } from 'lucide-react';
 
 export default function Home() {
   return (
-    <main className="min-h-screen p-8 flex flex-col items-center justify-center">
+    <main className="min-h-screen grid-bg flex flex-col items-center justify-center p-8">
       <motion.div 
-        initial={{ opacity: 0, y: 20 }} 
+        initial={{ opacity: 0, y: 10 }} 
         animate={{ opacity: 1, y: 0 }}
-        className="glass glow-border rounded-2xl p-12 max-w-4xl w-full text-center"
+        className="max-w-5xl w-full"
       >
-        <h1 className="text-6xl font-black mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-500">
-          BRAINROT DUEL ARENA
-        </h1>
-        <p className="text-gray-400 text-xl mb-8">The ultimate competitive esports platform for Roblox Steal a Brainrot.</p>
-        
-        <div className="flex gap-4 justify-center">
-          <Link href="/login" className="bg-gradient-to-r from-purple-600 to-blue-600 px-8 py-4 rounded-xl font-bold flex items-center gap-2 hover:scale-105 transition-transform">
-            <Swords className="w-5 h-5" /> Login to Fight
-          </Link>
-          <Link href="/register" className="bg-gray-800 border border-gray-700 px-8 py-4 rounded-xl font-bold flex items-center gap-2 hover:bg-gray-700 transition-colors">
-            Register
-          </Link>
+        {/* Header */}
+        <div className="flex justify-between items-center border-b border-border pb-4 mb-8">
+          <h1 className="text-2xl font-bold tracking-tight">
+            BRAINROT <span className="text-accent">DUEL</span>
+          </h1>
+          <div className="flex gap-2">
+            <Link href="/login" className="px-4 py-2 text-sm font-medium border border-border hover:bg-secondary transition-colors">
+              Войти
+            </Link>
+            <Link href="/register" className="px-4 py-2 text-sm font-bold bg-white text-black hover:bg-gray-300 transition-colors flex items-center gap-1">
+              Регистрация <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-8 mt-12">
-          <div className="flex flex-col items-center">
-            <Trophy className="w-8 h-8 text-yellow-500 mb-2" />
-            <h3 className="font-bold">Climb Ranks</h3>
-            <p className="text-gray-500 text-sm">ELO & Leaderboards</p>
+        {/* Main Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border border border-border mb-8">
+          <div className="bcard p-6 flex flex-col justify-between h-40">
+            <span className="text-xs text-gray-500 uppercase tracking-widest">Активные дуэли</span>
+            <span className="text-5xl font-bold text-white">1,248</span>
           </div>
-          <div className="flex flex-col items-center">
-            <Zap className="w-8 h-8 text-blue-500 mb-2" />
-            <h3 className="font-bold">AI Verified</h3>
-            <p className="text-gray-500 text-sm">No Scams</p>
+          <div className="bcard p-6 flex flex-col justify-between h-40">
+            <span className="text-xs text-gray-500 uppercase tracking-widest">Игроков онлайн</span>
+            <span className="text-5xl font-bold text-accent glow-green">342</span>
           </div>
-          <div className="flex flex-col items-center">
-            <Swords className="w-8 h-8 text-purple-500 mb-2" />
-            <h3 className="font-bold">Safe Escrow</h3>
-            <p className="text-gray-500 text-sm">Middleman Protected</p>
+          <div className="bcard p-6 flex flex-col justify-between h-40">
+            <span className="text-xs text-gray-500 uppercase tracking-widest">Объем рынка</span>
+            <span className="text-5xl font-bold text-white">12.4M</span>
           </div>
+        </div>
+
+        {/* Action Area */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bcard p-8 hover:border-accent transition-colors group cursor-pointer">
+            <div className="flex justify-between items-center mb-4">
+              <Crosshair className="w-8 h-8 text-accent" />
+              <span className="text-xs text-gray-500">PVP 1x1</span>
+            </div>
+            <h2 className="text-xl font-bold mb-2">Создать дуэль</h2>
+            <p className="text-sm text-gray-500 mb-6">Выбери свой Brainrot, выбери условия и брось вызов другому игроку.</p>
+            <Link href="/duels/create" className="inline-flex items-center gap-2 text-sm font-bold text-accent group-hover:gap-3 transition-all">
+              НАЧАТЬ ПОЕДИНОК <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <div className="bcard p-8 hover:border-white transition-colors group cursor-pointer">
+            <div className="flex justify-between items-center mb-4">
+              <Trophy className="w-8 h-8 text-white" />
+              <span className="text-xs text-gray-500">Рейтинг</span>
+            </div>
+            <h2 className="text-xl font-bold mb-2">Топ игроков</h2>
+            <p className="text-sm text-gray-500 mb-6">Соревнуйся, побеждай и поднимай свой MMR в глобальной таблице лидеров.</p>
+            <Link href="/leaderboard" className="inline-flex items-center gap-2 text-sm font-bold text-white group-hover:gap-3 transition-all">
+              ТАБЛИЦА ЛИДЕРОВ <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+
+        <div className="mt-8 text-center text-xs text-gray-700 font-mono">
+          SYSTEM STATUS: ONLINE | SECURE ESCROW ACTIVE
         </div>
       </motion.div>
     </main>

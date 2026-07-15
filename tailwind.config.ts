@@ -10,21 +10,20 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "#07070B",
-        secondary: "#101018",
-        card: "#171724",
-        border: "#2A2A3F",
-        primary: "#7C5CFF",
-        secondaryAccent: "#00D9FF",
-        success: "#34D399",
-        warning: "#FBBF24",
-        danger: "#EF4444",
-      },
-      borderRadius: {
-        "2xl": "16px",
+        background: "#0A0A0A",
+        secondary: "#121212",
+        card: "#181818",
+        border: "#262626",
+        primary: "#FFFFFF", // Чистый белый для акцентов
+        accent: "#00E676",  // Токсичный зеленый (как в FACEIT/CS)
+        danger: "#FF1744",  // Красный
       },
       fontFamily: {
-        sans: ["Inter", "sans-serif"],
+        sans: ["Inter", "system-ui", "sans-serif"],
+        mono: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+      },
+      borderRadius: {
+        "2xl": "4px", // Острые углы вместо округлостей
       },
     },
   },
