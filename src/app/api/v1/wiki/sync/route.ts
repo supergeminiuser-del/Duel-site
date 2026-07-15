@@ -5,52 +5,101 @@ import * as cheerio from 'cheerio';
 
 export async function GET() {
   try {
-    const { data } = await axios.get('https://steal-a-brainrot.fandom.com/wiki/Brainrots');
-    const $ = cheerio.load(data);
-    
-    const itemsToUpsert: any[] = [];
+    let syncedCounts = { brainrots: 0, traits: 0, mutations: 0 };
 
-    // Сначала синхронно собираем данные со страницы
-    $('.article-table tbody tr').each((i, el) => {
-      const name = $(el).find('td:nth-child(2)').text().trim();
-      const incomeText = $(el).find('td:nth-child(3)').text().trim();
-      const rarity = $(el).find('td:nth-child(4)').text().trim();
-      
-      const income = parseFloat(incomeText.replace(/[^0-9.]/g, ''));
+    // --- 1. ПАРСИНГ БРЕЙНРОТОВ ---
+    try {
+      const { data } = await axios.get('https://stealabrainrot.fandom.com/wiki/Brainrots');
+      const $ = cheerio.load(data);
+      const items: any[] = [];
 
-      if (name && !isNaN(income)) {
-        itemsToUpsert.push({
-          name,
-          baseIncome: income,
-          rarity: rarity || 'Unknown',
-          baseValue: income * 3600
-        });
-      }
-    });
-
-    // Теперь асинхронно сохраняем их в базу данных
-    for (const item of itemsToUpsert) {
-      await prisma.brainrot.upsert({
-        where: { name: item.name },
-        update: { 
-          baseIncome: item.baseIncome, 
-          rarity: item.rarity,
-          baseValue: item.baseValue
-        },
-        create: {
-          name: item.name,
-          baseIncome: item.baseIncome,
-          baseValue: item.baseValue,
-          rarity: item.rarity,
-          category: 'Parsed',
-          imageUrl: `/images/${item.name.toLowerCase().replace(/ /g, '-')}.jpg`
+      $('.article-table tbody tr, .wikitable tbody tr').each((i, el) => {
+        const columns = $(el).find('td');
+        if (columns.length > 0) {
+          const name = $(columns[0]).text().trim() || $(columns[1]).text().trim();
+          const incomeText = $(columns[1]).text().trim() || $(columns[2]).text().trim();
+          const income = parseFloat(incomeText.replace(/[^0-9.]/g, ''));
+          
+          if (name && name.length > 1 && !isNaN(income) && income > 0) {
+            items.push({ name, baseIncome: income, baseValue: income * 3600 });
+          }
         }
       });
-    }
+
+      for (const item of items) {
+        await prisma.brainrot.upsert({
+          where: { name: item.name },
+          update: { baseIncome: item.baseIncome, baseValue: item.baseValue },
+          create: { ...item, rarity: 'Unknown', category: 'Wiki', imageUrl: '' }
+        });
+      }
+      syncedCounts.brainrots = items.length;
+    } catch (e) { console.error("Brainrot parse error", e); }
+
+    // --- 2. ПАРСИНГ ТРЕЙТОВ ---
+    try {
+      const { data } = await axios.get('https://stealabrainrot.fandom.com/wiki/Traits');
+      const $ = cheerio.load(data);
+      const items: any[] = [];
+
+      $('.article-table tbody tr, .wikitable tbody tr').each((i, el) => {
+        const columns = $(el).find('td');
+        if (columns.length > 0) {
+          const name = $(columns[0]).text().trim() || $(columns[1]).text().trim();
+          if (name && name.length > 1 && !name.includes('[edit]')) {
+            // Ищем множитель в тексте строки (например "x2.5" или "2.5")
+            const rowText = $(el).text().toLowerCase();
+            const multMatch = rowText.match(/(\d+(\.\d+)?)/);
+            const multiplier = multMatch ? parseFloat(multMatch[1]) : 1.0;
+            
+            items.push({ name, multiplier });
+          }
+        }
+      });
+
+      for (const item of items) {
+        await prisma.trait.upsert({
+          where: { name: item.name },
+          update: { multiplier: item.multiplier },
+          create: { ...item, category: 'Wiki' }
+        });
+      }
+      syncedCounts.traits = items.length;
+    } catch (e) { console.error("Traits parse error", e); }
+
+    // --- 3. ПАРСИНГ МУТАЦИЙ ---
+    try {
+      const { data } = await axios.get('https://stealabrainrot.fandom.com/wiki/Mutations');
+      const $ = cheerio.load(data);
+      const items: any[] = [];
+
+      $('.article-table tbody tr, .wikitable tbody tr').each((i, el) => {
+        const columns = $(el).find('td');
+        if (columns.length > 0) {
+          const name = $(columns[0]).text().trim() || $(columns[1]).text().trim();
+          if (name && name.length > 1 && !name.includes('[edit]')) {
+            const rowText = $(el).text().toLowerCase();
+            const multMatch = rowText.match(/(\d+(\.\d+)?)/);
+            const multiplier = multMatch ? parseFloat(multMatch[1]) : 1.0;
+            
+            items.push({ name, multiplier });
+          }
+        }
+      });
+
+      for (const item of items) {
+        await prisma.mutation.upsert({
+          where: { name: item.name },
+          update: { multiplier: item.multiplier },
+          create: { ...item, spawnChance: 0.01 }
+        });
+      }
+      syncedCounts.mutations = items.length;
+    } catch (e) { console.error("Mutations parse error", e); }
 
     return NextResponse.json({ 
       success: true, 
-      message: `Wiki sync complete. Updated ${itemsToUpsert.length} brainrots.`
+      message: `Wiki sync complete! Synced: ${syncedCounts.brainrots} Brainrots, ${syncedCounts.traits} Traits, ${syncedCounts.mutations} Mutations.`
     });
 
   } catch (error: any) {
