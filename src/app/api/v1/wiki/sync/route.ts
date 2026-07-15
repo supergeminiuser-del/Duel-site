@@ -5,6 +5,8 @@ import * as cheerio from 'cheerio';
 
 export async function GET() {
   try {
+    // Обходим строгую типизацию для скрипта парсинга
+    const db = prisma as any;
     let syncedCounts = { brainrots: 0, traits: 0, mutations: 0 };
 
     // --- 1. ПАРСИНГ БРЕЙНРОТОВ ---
@@ -27,7 +29,7 @@ export async function GET() {
       });
 
       for (const item of items) {
-        await prisma.brainrot.upsert({
+        await db.brainrot.upsert({
           where: { name: item.name },
           update: { baseIncome: item.baseIncome, baseValue: item.baseValue },
           create: { ...item, rarity: 'Unknown', category: 'Wiki', imageUrl: '' }
@@ -47,7 +49,6 @@ export async function GET() {
         if (columns.length > 0) {
           const name = $(columns[0]).text().trim() || $(columns[1]).text().trim();
           if (name && name.length > 1 && !name.includes('[edit]')) {
-            // Ищем множитель в тексте строки (например "x2.5" или "2.5")
             const rowText = $(el).text().toLowerCase();
             const multMatch = rowText.match(/(\d+(\.\d+)?)/);
             const multiplier = multMatch ? parseFloat(multMatch[1]) : 1.0;
@@ -58,7 +59,7 @@ export async function GET() {
       });
 
       for (const item of items) {
-        await prisma.trait.upsert({
+        await db.trait.upsert({
           where: { name: item.name },
           update: { multiplier: item.multiplier },
           create: { ...item, category: 'Wiki' }
@@ -88,7 +89,7 @@ export async function GET() {
       });
 
       for (const item of items) {
-        await prisma.mutation.upsert({
+        await db.mutation.upsert({
           where: { name: item.name },
           update: { multiplier: item.multiplier },
           create: { ...item, spawnChance: 0.01 }
