@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum DuelStatus {
+  CREATED
+  WAITING_OPPONENT
+  VERIFICATION
+  WAITING_DEPOSITS
+  ITEMS_SECURED
+  READY
+  ACTIVE
+  EVIDENCE_UPLOAD
+  AI_REVIEW
+  HUMAN_REVIEW
+  WINNER_SELECTED
+  COMPLETED
+  DISPUTED
+  CANCELLED
+  REFUNDED
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String?  @unique
+  username       String   @unique
+  passwordHash   String?
+  robloxUsername String?
+  role           UserRole @default(USER)
+  xp             Int      @default(0)
+  level          Int      @default(1)
+  elo            Int      @default(1000)
+  wins           Int      @default(0)
+  losses         Int      @default(0)
+  reputation     Int      @default(0)
+  avatarUrl      String?
+  createdAt      DateTime @default(now())
+  
+  duelsCreated   Duel[]   @relation("DuelCreator")
+  duelsJoined    Duel[]   @relation("DuelOpponent")
+  inventory      Brainrot[]
+}
+
+model Brainrot {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  category      String
+  rarity        String
+  baseValue     Float
+  baseIncome    Float
+  imageUrl      String
+  wikiUrl       String?
+  releaseDate   DateTime?
+  
+  ownerId       String?
+  owner         User?    @relation(fields: [ownerId], references: [id])
+}
+
+model Duel {
+  id            String      @id @default(cuid())
+  status        DuelStatus  @default(CREATED)
+  creatorId     String
+  creator       User        @relation("DuelCreator", fields: [creatorId], references: [id])
+  opponentId    String?
+  opponent      User?       @relation("DuelOpponent", fields: [opponentId], references: [id])
+  winnerId      String?
+  createdAt     DateTime    @default(now())
+  completedAt   DateTime?
+}
