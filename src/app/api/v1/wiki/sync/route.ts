@@ -5,7 +5,6 @@ import * as cheerio from 'cheerio';
 
 export async function GET() {
   try {
-    // Обходим строгую типизацию для скрипта парсинга
     const db = prisma as any;
     let syncedCounts = { brainrots: 0, traits: 0, mutations: 0 };
 
@@ -15,15 +14,19 @@ export async function GET() {
       const $ = cheerio.load(data);
       const items: any[] = [];
 
-      $('.article-table tbody tr, .wikitable tbody tr').each((i, el) => {
+      // Ищем все строки во всех таблицах
+      $('table tr').each((i, el) => {
         const columns = $(el).find('td');
-        if (columns.length > 0) {
-          const name = $(columns[0]).text().trim() || $(columns[1]).text().trim();
-          const incomeText = $(columns[1]).text().trim() || $(columns[2]).text().trim();
+        if (columns.length >= 2) {
+          const name = $(columns[0]).text().trim().replace(/\[.*?\]/g, '');
+          const incomeText = $(columns[1]).text().trim();
           const income = parseFloat(incomeText.replace(/[^0-9.]/g, ''));
           
           if (name && name.length > 1 && !isNaN(income) && income > 0) {
-            items.push({ name, baseIncome: income, baseValue: income * 3600 });
+            // Проверяем, чтобы имя не было дублем
+            if (!items.find(x => x.name === name)) {
+              items.push({ name, baseIncome: income, baseValue: income * 3600 });
+            }
           }
         }
       });
@@ -44,16 +47,18 @@ export async function GET() {
       const $ = cheerio.load(data);
       const items: any[] = [];
 
-      $('.article-table tbody tr, .wikitable tbody tr').each((i, el) => {
+      $('table tr').each((i, el) => {
         const columns = $(el).find('td');
-        if (columns.length > 0) {
-          const name = $(columns[0]).text().trim() || $(columns[1]).text().trim();
-          if (name && name.length > 1 && !name.includes('[edit]')) {
+        if (columns.length >= 2) {
+          const name = $(columns[0]).text().trim().replace(/\[.*?\]/g, '');
+          if (name && name.length > 1 && name.toLowerCase() !== 'name') {
             const rowText = $(el).text().toLowerCase();
             const multMatch = rowText.match(/(\d+(\.\d+)?)/);
             const multiplier = multMatch ? parseFloat(multMatch[1]) : 1.0;
             
-            items.push({ name, multiplier });
+            if (!items.find(x => x.name === name)) {
+              items.push({ name, multiplier });
+            }
           }
         }
       });
@@ -74,16 +79,18 @@ export async function GET() {
       const $ = cheerio.load(data);
       const items: any[] = [];
 
-      $('.article-table tbody tr, .wikitable tbody tr').each((i, el) => {
+      $('table tr').each((i, el) => {
         const columns = $(el).find('td');
-        if (columns.length > 0) {
-          const name = $(columns[0]).text().trim() || $(columns[1]).text().trim();
-          if (name && name.length > 1 && !name.includes('[edit]')) {
+        if (columns.length >= 2) {
+          const name = $(columns[0]).text().trim().replace(/\[.*?\]/g, '');
+          if (name && name.length > 1 && name.toLowerCase() !== 'name') {
             const rowText = $(el).text().toLowerCase();
             const multMatch = rowText.match(/(\d+(\.\d+)?)/);
             const multiplier = multMatch ? parseFloat(multMatch[1]) : 1.0;
             
-            items.push({ name, multiplier });
+            if (!items.find(x => x.name === name)) {
+              items.push({ name, multiplier });
+            }
           }
         }
       });
